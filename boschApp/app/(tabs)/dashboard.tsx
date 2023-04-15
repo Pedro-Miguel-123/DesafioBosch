@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { FAB } from 'react-native-paper';
 
 interface ListItemProps {
   item: { id: string, title: string };
@@ -13,7 +14,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onPress, onLongPress }) => (
     onPress={() => onPress(item)}
     onLongPress={() => onLongPress(item)}
     style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#ccc' }}>
-    <Text style={{color:'#FFFFFF'}}>{item.title}</Text>
+    <Text style={{color: '#fff'}}>{item.title}</Text>
   </TouchableOpacity>
 );
 
@@ -29,16 +30,6 @@ const ListScreen: React.FC = () => {
     { id: '8', title: 'Item 8' },
     { id: '9', title: 'Item 9' },
     { id: '10', title: 'Item 10' },
-    { id: '11', title: 'Item 1' },
-    { id: '12', title: 'Item 2' },
-    { id: '13', title: 'Item 3' },
-    { id: '14', title: 'Item 4' },
-    { id: '15', title: 'Item 5' },
-    { id: '16', title: 'Item 6' },
-    { id: '17', title: 'Item 7' },
-    { id: '18', title: 'Item 8' },
-    { id: '19', title: 'Item 9' },
-    { id: '20', title: 'Item 10' }
   ]);
   const navigation = useNavigation();
 
@@ -69,6 +60,11 @@ const ListScreen: React.FC = () => {
   return (
     <View style={{ flex: 1 }}>
       <FlatList data={listData} renderItem={renderItem} keyExtractor={(item) => item.id} />
+      <FAB
+        icon="plus"
+        onPress={() => prompt("clicked button")}
+        style={{ position: 'absolute', bottom: 16, right: 16 }}
+      />
     </View>
   );
 };
