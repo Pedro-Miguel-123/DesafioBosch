@@ -20,6 +20,10 @@ const ProductsListScreen = () => {
     email: 'john.doe@example.com',
   };
 
+  useEffect(() => {
+    document.title = "My Bosch";
+  });
+
   const fetchProducts = async (setProducts) => {
     try {
         const response = await fetch(`http://localhost:3000/devices?user_id=${user.id}`, {
