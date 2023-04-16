@@ -1,72 +1,233 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { FAB } from 'react-native-paper';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { FAB, List, Portal, Provider } from 'react-native-paper';
+import Details from '../details';
 
-interface ListItemProps {
-  item: { id: string, title: string };
-  onPress: (item: { id: string, title: string }) => void;
-  onLongPress: (item: { id: string, title: string }) => void;
+type Product = {
+  id: string;
+  name: string;
+  icon: string;
+  functions: Array<string>;
+  status: Object;
+  date: Date;
+};
+
+const ProductsListScreen = () => {
+  const user = {
+    id: 1,
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+  };
+
+  const fetchProducts = async (setProducts) => {
+    try {
+        const response = await fetch(`http://localhost:3000/devices?user_id=${user.id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        const data = await response.json();
+        console.log(data);
+
+        let products = data.map((obj) => {
+          return {
+            id: obj._id.$oid,
+            name: obj.description,
+            icon: 'gear',
+            functions: JSON.parse(obj.function_list),
+            status: obj.status,
+            date: obj.date,
+          }
+        })
+
+        setProducts(products);
+      } catch (error) {
+        console.error(error);
+      }
 }
 
-const ListItem: React.FC<ListItemProps> = ({ item, onPress, onLongPress }) => (
-  <TouchableOpacity
-    onPress={() => onPress(item)}
-    onLongPress={() => onLongPress(item)}
-    style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#ccc' }}>
-    <Text style={{color: '#fff'}}>{item.title}</Text>
-  </TouchableOpacity>
-);
+  const [products, setProducts] = useState([]);
+  const [activeProduct, setActiveProduct] = useState(null);
+  const [visible, setVisible] = useState(false);
 
-const ListScreen: React.FC = () => {
-  const [listData, setListData] = useState<{ id: string, title: string }[]>([
-    { id: '1', title: 'Item 1' },
-    { id: '2', title: 'Item 2' },
-    { id: '3', title: 'Item 3' },
-    { id: '4', title: 'Item 4' },
-    { id: '5', title: 'Item 5' },
-    { id: '6', title: 'Item 6' },
-    { id: '7', title: 'Item 7' },
-    { id: '8', title: 'Item 8' },
-    { id: '9', title: 'Item 9' },
-    { id: '10', title: 'Item 10' },
-  ]);
-  const navigation = useNavigation();
+  useEffect(() => {
+    fetchProducts(setProducts);
+  }, []);
 
-  const handleItemPress = (item: { id: string, title: string }) => {
-    navigation.navigate('Details', { item });
+  const handleDeleteProduct = (productId: string) => {
+    setProducts((currentProducts) =>
+      currentProducts.filter((product) => product.id !== productId)
+    );
   };
 
-  const handleItemLongPress = (item: { id: string, title: string }) => {
-    Alert.alert('Delete Item', 'Are you sure you want to delete this item?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Delete',
-        onPress: () => {
-          const newListData = listData.filter((i) => i.id !== item.id);
-          setListData(newListData);
-        },
-      },
-    ]);
+  const handlePress = () => {
+    setVisible(true);
   };
 
-  const renderItem = ({ item }: { item: { id: string, title: string } }) => (
-    <ListItem item={item} onPress={handleItemPress} onLongPress={handleItemLongPress} />
-  );
+  const hideModal = () => {
+    setVisible(false);
+  };
+
+  const handleAddProduct = () => {
+    const newProduct: Product = {
+      id: Math.max(...products.map((p) => p.id)) + 1,
+      name: `Product ${products.length + 1}`,
+      icon: 'star',
+    };
+
+    setProducts((currentProducts) => [...currentProducts, newProduct]);
+  };
+
+  const [inputValue, setInputValue] = useState('');
+
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/devices/${inputValue}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ device: { user_id: user.id} }),
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await response.json();
+
+      const newProduct = {
+        id: data._id.$oid,
+        name: data.description,
+        icon: 'gear',
+        functions: JSON.parse(data.function_list),
+        status: data.status,
+        date: data.date,
+      };
+
+      setProducts((prevState) => [
+        ...prevState,
+        newProduct,
+      ]);
+
+      setVisible(false);
+      
+
+      console.log(data);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
-    <View style={{ flex: 1 }}>
-      <FlatList data={listData} renderItem={renderItem} keyExtractor={(item) => item.id} />
-      <FAB
-        icon="plus"
-        onPress={() => prompt("clicked button")}
-        style={{ position: 'absolute', bottom: 16, right: 16 }}
-      />
-    </View>
+    <Provider>
+      <View style={styles.container}>
+        {activeProduct ? (
+          <Details product={activeProduct} />
+        ) : (
+          <>
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{user.name}</Text>
+            <Text style={styles.userEmail}>{user.email}</Text>
+          </View>
+          <View style={styles.listContainer}>
+            <List.Section style={styles.list}>
+              {products && products.map((product) => (
+                <TouchableOpacity
+                  key={product.id}
+                  onPress={() => setActiveProduct(product)}
+                  onLongPress={() => handleDeleteProduct(product.id)}
+                >
+                  <List.Item
+                    title={product.name}
+                    left={() => <List.Icon icon={product.icon} />}
+                  />
+                </TouchableOpacity>
+              ))}
+            </List.Section>
+            <FAB
+              style={styles.fab}
+              icon="plus"
+              onPress={handlePress}
+            />
+            <Portal>
+            {visible && (
+            <TouchableOpacity style={styles.overlay}>
+              <View style={styles.popup}>
+                <Text>Enter some text:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={inputValue}
+                  onChangeText={setInputValue}
+                />
+                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                  <Text>Submit</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          )}
+          </Portal>
+          </View>
+        </>
+        )}
+      </View>
+    </Provider>
   );
 };
 
-export default ListScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  userDetails: {
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  userEmail: {
+    fontSize: 16,
+    color: '#666',
+  },
+  listContainer: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  list: {
+    width: '33%',
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  popup: {
+    backgroundColor: '#fff',
+    padding: 16,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: 'gray',
+    padding: 8,
+    marginVertical: 16,
+    width: '100%',
+  },
+  button: {
+    backgroundColor: 'blue',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+});
+
+export default ProductsListScreen;
