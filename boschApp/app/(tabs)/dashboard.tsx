@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { FAB, List, Portal, Provider } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, TouchableWithoutFeedback } from 'react-native';
+import { FAB, List, Portal, Provider, IconButton } from 'react-native-paper';
+import { black, white } from 'react-native-paper/lib/typescript/src/styles/themes/v2/colors';
 import Details from '../details';
 
 type Product = {
@@ -116,6 +117,14 @@ const ProductsListScreen = () => {
 
   return (
     <Provider>
+      {!!activeProduct && (
+        <IconButton
+          icon="arrow-left"
+          // color="white"
+          size={24}
+          onPress={() => setActiveProduct(null)}
+        />
+      )}
       <View style={styles.container}>
         {activeProduct ? (
           <Details product={activeProduct} />
@@ -146,22 +155,28 @@ const ProductsListScreen = () => {
               onPress={handlePress}
             />
             <Portal>
-            {visible && (
-            <TouchableOpacity style={styles.overlay}>
-              <View style={styles.popup}>
-                <Text>Enter some text:</Text>
-                <TextInput
-                  style={styles.input}
-                  value={inputValue}
-                  onChangeText={setInputValue}
-                />
-                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                  <Text>Submit</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
-          </Portal>
+              {visible && (
+                <TouchableWithoutFeedback onPress={() => setVisible(false)}>
+                  <View style={styles.overlay}>
+                    <TouchableWithoutFeedback>
+                      <View style={styles.popup} >
+                        <Text>Enter some text:</Text>
+                        <TouchableWithoutFeedback>
+                          <TextInput
+                            style={styles.input}
+                            value={inputValue}
+                            onChangeText={setInputValue}
+                          />
+                        </TouchableWithoutFeedback>
+                        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                          <Text style={styles.button_text}>Submit</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableWithoutFeedback>
+                  </View>
+                </TouchableWithoutFeedback>
+              )}
+            </Portal>
           </View>
         </>
         )}
@@ -227,7 +242,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    alignItems: 'center'
   },
+  button_text: {
+    color: 'white'
+  }
 });
 
 export default ProductsListScreen;
